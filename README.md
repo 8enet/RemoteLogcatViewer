@@ -17,7 +17,7 @@ LogcatRunner.getInstance().stop();
 <img src="images/web_ui_1.png" width="40%" height="40%" />
 
 ## 实现原理
-原理非常简单，在内部使用`Runtime.getRuntime().exec('logcat')` 执行命令去获取logcat输出流，然后逐行读取后通过websocket输出要远端，为了尽可能节省性能，只会维护一个输出。   
+原理非常简单，在内部使用`Runtime.getRuntime().exec("logcat");` 执行命令去获取logcat输出流，然后逐行读取后通过websocket输出要远端，为了尽可能节省性能，只会维护一个输出。   
 注意只能输出自己包下的log日志，多进程情况下建议在常驻后台的Service中启动本监听。
 
 ## 作用
