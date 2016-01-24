@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html xmlns=http://www.w3.org/1999/xhtml>
+<head>
+
+    <!-- *** I only test compatibility in Chrome/Safari base on Mac OSX ! *** -->
+    <!-- some code copy from https://github.com/hakobera/Simple-WebSocket-Client. Thanks hakobera ! -->
+
+
+    <meta http-equiv=Content-Type content="text/html;charset=utf-8">
+    <title>Android Remote Logcat</title>
+    <style type="text/css">
+        html, body, div, span, object, iframe,
+        h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+        abbr, address, cite, code,
+        del, dfn, em, img, ins, kbd, q, samp,
+        small, strong, sub, sup, var,
+        b, i,
+        dl, dt, dd, ol, ul, li,
+        fieldset, form, label, legend,
+        table, caption, tbody, tfoot, thead, tr, th, td,
+        article, aside, canvas, details, figcaption, figure,
+        footer, header, menu, nav, section, summary,
+        time, mark, audio, video {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            outline: 0;
+            font-size: 100%;
+            vertical-align: baseline;
+            background: transparent;
+
+        }
+
+        html, body {
+            line-height: 1;
+            height: 100%;
+        }
+
+        abbr[title], dfn[title] {
+            border-bottom: 1px dotted #000;
+            cursor: help;
+        }
+
+        table {
+            border-collapse: collapse;
+            border-spacing: 0;
+        }
+
+
+
+        input, select {
+            vertical-align: middle;
+        }
+
+        body {
+            width: 100%;
+            color: #000;
+            height: 100%;
+            background-color: #eee;
+            font-size: 10pt;
+        }
+
+        fieldset {
+            margin-bottom: 10px;
+            padding: 5px 10px;
+            border: 1px solid #777;
+        }
+
+        legend {
+            padding: 0 5px;
+            color: #777;
+            font-size: 11pt;
+            font-weight: bold;
+        }
+
+        label {
+            color: #777;
+            font-weight: bold;
+        }
+
+        #connectionStatus {
+            font-weight: bold;
+        }
+
+        #content {
+            padding: 10px;
+            height: 100%;
+        }
+
+        #serverUrl {
+            width: 300px;
+            padding: 1px 3px;
+            border: 1px solid #999;
+        }
+
+        #disconnectButton {
+            display: none;
+        }
+
+        #requestArea textarea {
+            min-width: 330px;
+            height: 2em;
+            padding: 0 3px;
+            line-height: 150%;
+        }
+
+        #messageArea {
+            height: 65%;
+        }
+
+        #messages {
+            height: 91%;
+            margin: 5px 0;
+            padding: 0 5px;
+            overflow: auto;
+            border: 1px dotted #777;
+            background-color: #fff;
+            line-height: 150%;
+        }
+
+        #messages pre {
+            width: 100%;
+            color: #000;
+        }
+
+        #messages pre.sent {
+            color: #f63;
+        }
+
+        #messages pre.V_log {
+            color: black;
+        }
+
+        #messages pre.W_log {
+            color: #FFC125;
+        }
+
+        #messages pre.E_log {
+            color: red;
+        }
+
+    </style>
+
+</head>
+<body>
+<script>
+    if (!window.WebSocket && window.MozWebSocket) {
+        window.WebSocket = window.MozWebSocket;
+    } else if (!window.WebSocket) {
+        alert("WebSocket not supported by this browser");
+    }
+</script>
+<div id="content">
+    <fieldset>
+        <legend>Server Location</legend>
+        <div>
+            <label>URL:</label>
+            <input type="text" id="serverUrl" value="ws://192.168.57.101:11220/logcat"/>
+            <button id="connectButton">Open</button>
+            <button id="disconnectButton">Close</button>
+        </div>
+        <div>
+            <label>Status:</label>
+            <span id="connectionStatus" style="color: red;">CLOSED</span>
+        </div>
+    </fieldset>
+    <fieldset id="requestArea">
+        <legend>Request</legend>
+        <div>
+            <textarea id="sendMessage" disabled="disabled"></textarea>
+
+
+            <!-- 当前还不支持过滤 -->
+            <select id="select_log_priority" disabled="disabled">
+                <option value="V">Verbose</option>
+                <option value="D">Debug</option>
+                <option value="I">Info</option>
+                <option value="W">Warn</option>
+                <option value="E">Error</option>
+                <option value="A">Assert</option>
+            </select>
+
+        </div>
+        <div>
+            <button id="sendButton" disabled="disabled">Send</button>
+            [Shortcut] Ctr + Enter
+        </div>
+
+    </fieldset>
+    <fieldset id="messageArea">
+        <legend>Logcat
+            <button id="clearMessage">Clear</button>
+        </legend>
+        <div id="messages"></div>
+    </fieldset>
+</div>
+<script type="text/javascript" src="https://code.jquery.com/jquery-1.12.0.min.js"></script>
+<script type="text/javascript">
+    new function () {
+        var ws = null;
+        var connected = false;
+
+        var serverVersion=null;
+
+        var serverUrl;
+        var connectionStatus;
+        var sendMessage;
+
+        var connectButton;
+        var disconnectButton;
+        var sendButton;
+
+        var logPrioritySelect;
+
+        var open = function () {
+            var url = serverUrl.val();
+            ws = new WebSocket(url);
+            ws.onopen = onOpen;
+            ws.onclose = onClose;
+            ws.onmessage = onMessage;
+            ws.onerror = onError;
+
+            connectionStatus.text('OPENING ...');
+            serverUrl.attr('disabled', 'disabled');
+            connectButton.hide();
+            disconnectButton.show();
+        }
+
+        var close = function () {
+            if (ws) {
+                console.log('CLOSING ...');
+                ws.close();
+            }
+            connected = false;
+            connectionStatus.text('CLOSED');
+            connectionStatus.css("color", "red");
+
+            serverUrl.removeAttr('disabled');
+            connectButton.show();
+            disconnectButton.hide();
+            sendMessage.attr('disabled', 'disabled');
+            sendButton.attr('disabled', 'disabled');
+            logPrioritySelect.attr('disabled', 'disabled');
+
+        }
+
+        var clearLog = function () {
+            $('#messages').html('');
+        }
+
+        var onOpen = function () {
+            console.log('OPENED: ' + serverUrl.val());
+            connected = true;
+            connectionStatus.text('OPENED');
+            connectionStatus.css("color", "green");
+
+            sendMessage.removeAttr('disabled');
+            sendButton.removeAttr('disabled');
+            logPrioritySelect.removeAttr('disabled');
+
+            ws.send('Hello Server');
+        };
+
+        var onClose = function () {
+            console.log('CLOSED: ' + serverUrl.val());
+            ws = null;
+            addMessage("websocked closed!", 'SENT');
+            close();
+        };
+
+        var onMessage = function (event) {
+
+            addMessage(event.data);
+        };
+
+        var onError = function (event) {
+            console.error(event);
+            alert("websocket connection "+serverUrl.val()+" has error !");
+        }
+
+        var addMessage = function (data, type) {
+            var msg = $('<pre>').text(data);
+            if (type === 'SENT') {
+                msg.addClass('sent');
+            }else{
+
+                try {
+                    //change text color
+                    var leve = data.split(" ", 3)[2][0];
+                    if (leve == 'W') {
+                        msg.addClass("W_log");
+                    } else if (leve == 'E') {
+                        msg.addClass("E_log");
+                    }
+                } catch (err) {
+                }
+            }
+
+
+            var messages = $('#messages');
+            messages.append(msg);
+
+            var msgBox = messages.get(0);
+            while (msgBox.childNodes.length > 1000) {
+                msgBox.removeChild(msgBox.firstChild);
+            }
+            msgBox.scrollTop = msgBox.scrollHeight;
+        }
+
+        WebSocketClient = {
+            init: function () {
+                serverUrl = $('#serverUrl');
+                connectionStatus = $('#connectionStatus');
+                sendMessage = $('#sendMessage');
+
+                connectButton = $('#connectButton');
+                disconnectButton = $('#disconnectButton');
+                sendButton = $('#sendButton');
+
+                logPrioritySelect = $("#select_log_priority");
+
+
+                connectButton.click(function (e) {
+                    close();
+                    open();
+                });
+
+                disconnectButton.click(function (e) {
+                    close();
+                });
+
+                sendButton.click(function (e) {
+                    var msg = $('#sendMessage').val();
+                    addMessage(msg, 'SENT');
+                    ws.send(msg);
+                });
+
+                $('#clearMessage').click(function (e) {
+                    clearLog();
+                });
+
+                var isCtrl;
+                sendMessage.keyup(function (e) {
+                    if (e.which == 17) isCtrl = false;
+                }).keydown(function (e) {
+                    if (e.which == 17) isCtrl = true;
+                    if (e.which == 13 && isCtrl == true) {
+                        sendButton.click();
+                        return false;
+                    }
+                });
+            }
+        };
+    }
+
+    $(function () {
+        WebSocketClient.init();
+    });
+
+</script>
+</body>
+</html>
