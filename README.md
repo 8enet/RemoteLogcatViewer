@@ -13,7 +13,7 @@ LogcatRunner.getInstance().start();
 //stop
 LogcatRunner.getInstance().stop();
 ```
-然后即可在浏览器中打开 `logcat.html` 在输入对应ip和端口`ws://ip:port/logcat`
+然后在浏览器中打开 [index.html](http://8enet.github.io/RemoteLogcatViewer/) 输入对应局域网ip和端口`ws://ip:port/logcat` 即可。
 <img src="images/web_ui_1.png" width="40%" height="40%" />
 
 ## 实现原理
