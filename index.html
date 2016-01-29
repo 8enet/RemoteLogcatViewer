@@ -131,11 +131,23 @@
             color: black;
         }
 
+        #messages pre.D_log {
+            color: black;
+        }
+
+        #messages pre.I_log {
+            color: black;
+        }
+
         #messages pre.W_log {
             color: #FFC125;
         }
 
         #messages pre.E_log {
+            color: red;
+        }
+
+        #messages pre.A_log {
             color: red;
         }
 
@@ -169,9 +181,7 @@
         <div>
             <textarea id="sendMessage" disabled="disabled"></textarea>
 
-
-            <!-- 当前还不支持过滤 -->
-            <select id="select_log_priority" disabled="disabled">
+            <select id="select_log_priority" >
                 <option value="V">Verbose</option>
                 <option value="D">Debug</option>
                 <option value="I">Info</option>
@@ -196,6 +206,18 @@
 </div>
 <script type="text/javascript" src="https://code.jquery.com/jquery-1.12.0.min.js"></script>
 <script type="text/javascript">
+var logMap=new Map();
+logMap.set("V","V_log");
+logMap.set("D","D_log");
+logMap.set("I","I_log");
+logMap.set("W","W_log");
+logMap.set("E","E_log");
+logMap.set("A","A_log");
+
+
+var currLevel='V';
+
+
     new function () {
         var ws = null;
         var connected = false;
@@ -211,6 +233,13 @@
         var sendButton;
 
         var logPrioritySelect;
+
+        window.onbeforeunload =function (){
+             if(ws){
+                ws.close();
+             }
+        return null;
+    }
 
         var open = function () {
             var url = serverUrl.val();
@@ -280,31 +309,45 @@
 
         var addMessage = function (data, type) {
             var msg = $('<pre>').text(data);
+            
             if (type === 'SENT') {
                 msg.addClass('sent');
-            }else{
-
-                try {
-                    //change text color
-                    var leve = data.split(" ", 3)[2][0];
-                    if (leve == 'W') {
-                        msg.addClass("W_log");
-                    } else if (leve == 'E') {
-                        msg.addClass("E_log");
-                    }
-                } catch (err) {
-                }
             }
 
+            var lineType='V';
+               try {
+                    //change text color
+                    var leve = findType(data);
+
+                    var cls=logMap.get(leve);
+                    if(cls){
+                        lineType=leve;
+                        msg.addClass(cls);
+                    }
+
+                } catch (err) {
+                }
 
             var messages = $('#messages');
+            var canShow=canDisplayLog(lineType);
             messages.append(msg);
+            msg.data("type",lineType);
 
             var msgBox = messages.get(0);
+            
+            if(canShow){
+                msg.show();
+            }else{
+                msg.hide();
+            }
+            
             while (msgBox.childNodes.length > 1000) {
                 msgBox.removeChild(msgBox.firstChild);
             }
-            msgBox.scrollTop = msgBox.scrollHeight;
+            if(canShow){
+                msgBox.scrollTop = msgBox.scrollHeight;
+            }
+            
         }
 
         WebSocketClient = {
@@ -319,6 +362,11 @@
 
                 logPrioritySelect = $("#select_log_priority");
 
+logPrioritySelect.change(function (){
+    currLevel=$(this).children('option:selected').val();
+
+    changeLogPriority(currLevel);
+});
 
                 connectButton.click(function (e) {
                     close();
@@ -351,12 +399,57 @@
                 });
             }
         };
+
+
+function canDisplayLog(type){
+    switch(currLevel){
+        case 'V':
+           return true;
+        case 'D':
+            return type == 'D' || type == 'I' || type == 'W' || type == 'E' || type == 'A';
+        case 'I':
+            return type == 'I' || type == 'W' || type == 'E' || type == 'A';
+        case 'W':
+            return type == 'W' || type == 'E' || type == 'A';
+        case 'E':
+            return type == 'E' || type == 'A';
+        case 'A':
+            return type == 'A';
+    }
+    return true;
+}
+
+function findType(line){
+    var inx = line.indexOf('/');
+    if(inx > 0){
+        return line.charAt(inx-1);
+    }
+}
+
+
+ function changeLogPriority(priority){
+
+var currCls =logMap.get(priority);
+    if(currCls){
+        
+        $('#messages').children().each(function (){
+            var type= $(this).data("type");
+            if(type && canDisplayLog(type)){
+                $(this).show();
+                $(this).scrollTop = $(this).scrollHeight;
+                
+            }else{
+                $(this).hide();   
+            }
+        });
+    }
+ }
+
     }
 
     $(function () {
         WebSocketClient.init();
     });
-
 </script>
 </body>
 </html>
