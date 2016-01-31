@@ -23,8 +23,9 @@ LogcatRunner.getInstance().stop();
 ## 作用
 某些Android设备没有调试接口，比如电视或者各种盒子终端，没法连接usb调试当然也不能查看logcat日志了，这个项目是在浏览器上远程显示logcat输出，帮助调试开发使用。
 
-## 感谢
-[AndroidAsync](https://github.com/koush/AndroidAsync)
+## 功能
+目前可以完整的查看、过滤logcat信息。
+支持日志文件写入、下载。
 
 ## License
 Apache License 2.0
