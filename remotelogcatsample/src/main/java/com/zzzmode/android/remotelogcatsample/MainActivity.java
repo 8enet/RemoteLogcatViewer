@@ -7,36 +7,47 @@ import android.util.Log;
 
 import com.zzzmode.android.remotelogcat.LogcatRunner;
 
+import java.io.IOException;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
 
-    private boolean logRunning=false;
+    private static final String TAG = "MainActivity";
+    
+    private boolean logRunning = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        LogcatRunner.getInstance().bind(11220).start();
+
+        try {
+            LogcatRunner.getInstance().start();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    private void startLog(){
-        if(logRunning){
+    private void startLog() {
+        if (logRunning) {
             return;
         }
-        logRunning=true;
+        logRunning = true;
         new Thread(new Runnable() {
             @Override
             public void run() {
-                Random random=new Random();
-                int i=0;
-                while (logRunning){
-                    if(random.nextBoolean()){
-                        Log.e("testlog", "run --> "+i);
-                    }else {
-                        Log.w("testlog", "run --> "+i);
+                Random random = new Random();
+                int i = 0;
+                while (logRunning) {
+                    if (random.nextBoolean()) {
+                        Log.e("testlog", "run --> " + i);
+                    } else {
+                        Log.w("testlog", "run --> " + i);
+
                     }
-                    SystemClock.sleep(random.nextInt(3000)+100);
+//                    test();test();test();test();test();test();test();
+//                    test();test();test();test();test();test();test();
+                    SystemClock.sleep(random.nextInt(5000) + 100);
                     i++;
                 }
             }
@@ -44,6 +55,13 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    private static void test(){
+        try {
+            throw new RuntimeException("----");
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
 
     @Override
     protected void onStart() {
@@ -54,14 +72,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
-        logRunning=false;
+        logRunning = false;
     }
 
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
         LogcatRunner.getInstance().stop();
 
     }

@@ -1,28 +1,10 @@
-/*
- * Copyright (C) 2016 zlcn2200@yeah.net . All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 
 package com.zzzmode.android.remotelogcat;
 
-import android.os.Build;
 import android.util.Log;
 
-import com.koushikdutta.async.callback.CompletedCallback;
-import com.koushikdutta.async.http.WebSocket;
-import com.koushikdutta.async.http.server.AsyncHttpServer;
-import com.koushikdutta.async.http.server.AsyncHttpServerRequest;
+import com.zzzmode.android.server.WebSocket;
+import com.zzzmode.android.server.WebSocketServer;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -35,112 +17,104 @@ public class LogcatRunner {
 
     private static final int VERSION=1;
 
-    private static LogcatRunner mLogcat;
+    private static LogcatRunner sLogcatRunner;
 
     private ShellProcessThread mLogcatThread;
 
     private ShellProcessThread.ProcessOutputCallback mProcessOutputCallback;
 
-    private AsyncHttpServer server;
+    private WebSocketServer mWebSocketServer;
 
-    private volatile WebSocket mCurrentWebSocket;  //we only handle last connect websocket
+    private WebSocket mCurrWebSocket;
 
     private int port=11229;
 
-    private boolean isBind=false;
+    private static final String cmd="logcat -v time";
 
-    private String cmd="logcat -v time";
+    public static volatile long byteCount=0;
+
 
     public static LogcatRunner getInstance(){
-        if(mLogcat == null){
-            mLogcat=new LogcatRunner();
+        if(sLogcatRunner == null){
+            synchronized (LogcatRunner.class){
+                if(sLogcatRunner == null){
+                    sLogcatRunner =new LogcatRunner();
+                }
+            }
         }
-        return mLogcat;
+        return sLogcatRunner;
     }
 
     private LogcatRunner(){
 
-        server=new AsyncHttpServer();
+    }
 
-        server.websocket("/logcat", new AsyncHttpServer.WebSocketRequestCallback() {
+    private void init() throws IOException {
+        mWebSocketServer=new WebSocketServer(port,"/logcat");
+
+        mWebSocketServer.setWebSocketServerCallback(new WebSocketServer.WebSocketServerCallback() {
             @Override
-            public void onConnected(final WebSocket webSocket, AsyncHttpServerRequest request) {
-                if(mCurrentWebSocket != null && mCurrentWebSocket != webSocket){
-                    mCurrentWebSocket.end();
+            public void onConnected(WebSocket webSocket) {
+                try {
+                    if(mCurrWebSocket != null){
+                        mCurrWebSocket.close();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
 
-                mCurrentWebSocket=webSocket;
+                mCurrWebSocket=webSocket;
 
-                webSocket.setClosedCallback(new CompletedCallback() {
-                    @Override
-                    public void onCompleted(Exception ex) {
-                        try {
-                            if (ex != null)
-                                Log.e("WebSocket", "Error");
-                        } finally {
-                            if(webSocket == mCurrentWebSocket){
-                                mCurrentWebSocket=null;
-                            }
-                        }
-                    }
-                });
+                if(mCurrWebSocket != null){
 
-                webSocket.setStringCallback(new WebSocket.StringCallback() {
-
-
-                    @Override
-                    public void onStringAvailable(String s) {
-                        if ("Hello Server".equals(s)){
-                            webSocket.send("welcome remote logcat!  server: "+ Build.MODEL+"   "+"    "+Build.VERSION.RELEASE);
-                            webSocket.send("$"+VERSION);
+                    mCurrWebSocket.setWebSocketCallback(new WebSocket.WebSocketCallback() {
+                        @Override
+                        public void onReceivedFrame(byte[] bytes) {
+                            Log.e(TAG, "onReceivedFrame --> "+new String(bytes));
                         }
 
-                    }
-                });
+                        @Override
+                        public void onClosed() {
+                            Log.e(TAG, "onClosed --> "+mCurrWebSocket);
+                            mCurrWebSocket=null;
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onClosed() {
+
             }
         });
-
 
         mProcessOutputCallback=new ShellProcessThread.ProcessOutputCallback() {
 
             @Override
-            public void onReaderLine(String output) {
-                if(mCurrentWebSocket != null){
-                    mCurrentWebSocket.send(output);
+            public void onReaderLine(String line) {
+                if(mCurrWebSocket != null && line != null){
+                    try {
+                        mCurrWebSocket.send(line);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         };
-
     }
 
-
-    public LogcatRunner bind(int port) {
-        if (!isBind) {
-            this.port=port;
-            server.listen(port);
-            isBind = true;
-        }
-        return mLogcat;
-    }
 
     public int getPort(){
         return port;
     }
 
-    public void start(){
-        try {
-            if(!isBind){
-                bind(port);
-            }
-
-            startLogThread();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
+    public void start() throws IOException {
+        init();
+        mWebSocketServer.start();
+        startLogThread();
     }
 
-    
+
     private void startLogThread(){
         try {
             if(mLogcatThread !=null && mLogcatThread.isAlive()){
@@ -156,19 +130,13 @@ public class LogcatRunner {
         mLogcatThread.start();
 
     }
-    
+
     public void stop(){
         try {
-            if(mCurrentWebSocket != null){
-                mCurrentWebSocket.end();
-            }
 
-            mCurrentWebSocket=null;
-            if (server != null) {
-                server.stop();
+            if(mWebSocketServer != null){
+                mWebSocketServer.stop();
             }
-
-            isBind=false;
 
             if (mLogcatThread != null && mLogcatThread.isAlive()) {
                 mLogcatThread.stopReader();
@@ -179,7 +147,7 @@ public class LogcatRunner {
             e.printStackTrace();
         }
     }
-    
+
 
     private static class ShellProcessThread extends Thread {
 
@@ -204,29 +172,20 @@ public class LogcatRunner {
             try{
 
                 exec= Runtime.getRuntime().exec(cmd);
-
                 inputStream = exec.getInputStream();
 
                 reader=new BufferedReader(new InputStreamReader(inputStream));
-
-                String line=null;
-                
-                do {
-                    line=reader.readLine();
-                    
-                    if(mOutputCallback != null ){
+                while (readerLogging){
+                    String line=reader.readLine();
+                    if(mOutputCallback != null){
                         mOutputCallback.onReaderLine(line);
                     }
 
-                }while (readerLogging && line != null);
-
-                if(readerLogging){
-                    exec.waitFor();
                 }
+
             }catch (Exception e){
                 e.printStackTrace();
             }finally {
-
                 try {
                     if(reader != null){
                         reader.close();
@@ -248,7 +207,6 @@ public class LogcatRunner {
                 }
             }
         }
-        
 
         public void stopReader(){
             readerLogging =false;
@@ -256,9 +214,8 @@ public class LogcatRunner {
 
 
         interface ProcessOutputCallback{
-            void  onReaderLine(String output);
+            void  onReaderLine(String line);
         }
     }
-
 
 }
