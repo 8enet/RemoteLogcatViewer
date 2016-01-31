@@ -25,7 +25,7 @@ LogcatRunner.getInstance().stop();
 
 ## 功能
 目前可以完整的查看、过滤logcat信息。
-后续会逐步加入其他功能，比如日志文件写入、文件管理等。
+支持日志文件写入、下载。
 
 ## License
 Apache License 2.0

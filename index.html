@@ -21,134 +21,173 @@
         article, aside, canvas, details, figcaption, figure,
         footer, header, menu, nav, section, summary,
         time, mark, audio, video {
-            margin: 0;
-            padding: 0;
-            border: 0;
-            outline: 0;
-            font-size: 100%;
-            vertical-align: baseline;
-            background: transparent;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        outline: 0;
+        font-size: 100%;
+        vertical-align: baseline;
+        background: transparent;
 
         }
 
         html, body {
-            line-height: 1;
-            height: 100%;
+        line-height: 1;
+        height: 100%;
         }
 
         abbr[title], dfn[title] {
-            border-bottom: 1px dotted #000;
-            cursor: help;
+        border-bottom: 1px dotted #000;
+        cursor: help;
         }
 
         table {
-            border-collapse: collapse;
-            border-spacing: 0;
+        border-collapse: collapse;
+        border-spacing: 0;
         }
 
+        ul#tabs {
+        list-style-type: none;
+        margin: 30px 0 0 0;
+        padding: 0 0 0.3em 0;
+        }
 
+        ul#tabs li {
+        display: inline;
+        }
+
+        ul#tabs li a {
+        color: #42454a;
+        background-color: #dedbde;
+        border: 1px solid #c9c3ba;
+        border-bottom: none;
+        padding: 0.3em;
+        text-decoration: none;
+        }
+
+        ul#tabs li a:hover {
+        background-color: #f1f0ee;
+        }
+
+        ul#tabs li a.selected {
+        color: #000;
+        background-color: #f1f0ee;
+        font-weight: bold;
+        padding: 0.7em 0.3em 0.38em 0.3em;
+        }
+
+        div.tabContent {
+        height: 65%;
+        border: 1px solid #c9c3ba;
+        padding: 0.5em;
+        background-color: #f1f0ee;
+        }
+
+        div.tabContent.hide {
+        display: none;
+        }
 
         input, select {
-            vertical-align: middle;
+        vertical-align: middle;
         }
 
         body {
-            width: 100%;
-            color: #000;
-            height: 100%;
-            background-color: #eee;
-            font-size: 10pt;
+        width: 100%;
+        color: #000;
+        height: 100%;
+        background-color: #eee;
+        font-size: 10pt;
         }
 
         fieldset {
-            margin-bottom: 10px;
-            padding: 5px 10px;
-            border: 1px solid #777;
+        margin-bottom: 10px;
+        padding: 5px 10px;
+        border: 1px solid #777;
         }
 
         legend {
-            padding: 0 5px;
-            color: #777;
-            font-size: 11pt;
-            font-weight: bold;
+        padding: 0 5px;
+        color: #777;
+        font-size: 11pt;
+        font-weight: bold;
         }
 
         label {
-            color: #777;
-            font-weight: bold;
+        color: #777;
+        font-weight: bold;
         }
 
         #connectionStatus {
-            font-weight: bold;
+        font-weight: bold;
         }
 
         #content {
-            padding: 10px;
-            height: 100%;
+        padding: 10px;
+        height: 100%;
         }
 
         #serverUrl {
-            width: 300px;
-            padding: 1px 3px;
-            border: 1px solid #999;
+        width: 300px;
+        padding: 1px 3px;
+        border: 1px solid #999;
         }
 
         #disconnectButton {
-            display: none;
+        display: none;
         }
 
         #requestArea textarea {
-            min-width: 330px;
-            height: 2em;
-            padding: 0 3px;
-            line-height: 150%;
+        min-width: 330px;
+        height: 2em;
+        padding: 0 3px;
+        line-height: 150%;
         }
 
         #messageArea {
-            height: 65%;
+        height: 100%;
         }
 
         #messages {
-            height: 91%;
-            margin: 5px 0;
-            padding: 0 5px;
-            overflow: auto;
-            border: 1px dotted #777;
-            background-color: #fff;
-            line-height: 150%;
+        height: 92%;
+        margin: 5px 0;
+        padding: 0 5px;
+        overflow: auto;
+        border: 1px dotted #777;
+        background-color: #fff;
+        line-height: 150%;
         }
 
         #messages pre {
-            width: 100%;
-            color: #000;
+        width: 100%;
+        color: #000;
         }
 
         #messages pre.sent {
-            color: #f63;
+        color: #f63;
         }
 
         #messages pre.V_log {
-            color: black;
+        color: black;
         }
 
         #messages pre.D_log {
-            color: black;
+        color: black;
         }
 
         #messages pre.I_log {
-            color: black;
+        color: black;
         }
 
         #messages pre.W_log {
-            color: #FFC125;
+        color: #FFC125;
         }
 
         #messages pre.E_log {
-            color: red;
+        color: red;
         }
 
         #messages pre.A_log {
-            color: red;
+        color: red;
         }
 
     </style>
@@ -167,7 +206,7 @@
         <legend>Server Location</legend>
         <div>
             <label>URL:</label>
-            <input type="text" id="serverUrl" value="ws://192.168.57.101:11220/logcat"/>
+            <input type="text" id="serverUrl" value="ws://192.168.57.101:11229/logcat"/>
             <button id="connectButton">Open</button>
             <button id="disconnectButton">Close</button>
         </div>
@@ -181,7 +220,7 @@
         <div>
             <textarea id="sendMessage" disabled="disabled"></textarea>
 
-            <select id="select_log_priority" >
+            <select id="select_log_priority">
                 <option value="V">Verbose</option>
                 <option value="D">Debug</option>
                 <option value="I">Info</option>
@@ -197,33 +236,56 @@
         </div>
 
     </fieldset>
-    <fieldset id="messageArea">
-        <legend>Logcat
-            <button id="clearMessage">Clear</button>
-        </legend>
+
+
+    <ul id="tabs">
+        <li><a href="#logcat">Logcat</a></li>
+        <li><a href="#fileExplore">File Explore</a></li>
+        <li><a href="#shell">Shell</a></li>
+    </ul>
+
+    <div class="tabContent" id="logcat">
+
+        <button id="clearMessage">Clear</button>
         <div id="messages"></div>
-    </fieldset>
+
+    </div>
+
+    <div class="tabContent" id="fileExplore">
+        <button id="fileRefresh">Refresh</button>
+        <div id="filelist">
+
+        </div>
+
+    </div>
+
+    <div class="tabContent" id="shell">
+        <h2>shell</h2>
+
+    </div>
+
 </div>
 <script type="text/javascript" src="https://code.jquery.com/jquery-1.12.0.min.js"></script>
 <script type="text/javascript">
-var logMap=new Map();
-logMap.set("V","V_log");
-logMap.set("D","D_log");
-logMap.set("I","I_log");
-logMap.set("W","W_log");
-logMap.set("E","E_log");
-logMap.set("A","A_log");
+    var logMap = new Map();
+    logMap.set("V", "V_log");
+    logMap.set("D", "D_log");
+    logMap.set("I", "I_log");
+    logMap.set("W", "W_log");
+    logMap.set("E", "E_log");
+    logMap.set("A", "A_log");
 
 
-var currLevel='V';
+    var currLevel = 'V';
 
 
     new function () {
         var ws = null;
         var connected = false;
 
-        var serverVersion=null;
+        var serverVersion = null;
 
+        var baseURL;
         var serverUrl;
         var connectionStatus;
         var sendMessage;
@@ -233,16 +295,20 @@ var currLevel='V';
         var sendButton;
 
         var logPrioritySelect;
+        var fileList;
 
-        window.onbeforeunload =function (){
-             if(ws){
+        window.onbeforeunload = function () {
+            if (ws) {
                 ws.close();
-             }
-        return null;
-    }
+            }
+            return null;
+        }
 
         var open = function () {
             var url = serverUrl.val();
+
+            baseURL = url.substring(url.indexOf("//"), url.lastIndexOf("/")).replace("//", "");
+
             ws = new WebSocket(url);
             ws.onopen = onOpen;
             ws.onclose = onClose;
@@ -304,50 +370,99 @@ var currLevel='V';
 
         var onError = function (event) {
             console.error(event);
-            alert("websocket connection "+serverUrl.val()+" has error !");
+            alert("websocket connection " + serverUrl.val() + " has error !");
         }
 
         var addMessage = function (data, type) {
             var msg = $('<pre>').text(data);
-            
+
             if (type === 'SENT') {
                 msg.addClass('sent');
             }
 
-            var lineType='V';
-               try {
-                    //change text color
-                    var leve = findType(data);
+            var lineType = 'V';
+            try {
+                //change text color
+                var leve = findType(data);
 
-                    var cls=logMap.get(leve);
-                    if(cls){
-                        lineType=leve;
-                        msg.addClass(cls);
-                    }
-
-                } catch (err) {
+                var cls = logMap.get(leve);
+                if (cls) {
+                    lineType = leve;
+                    msg.addClass(cls);
                 }
 
+            } catch (err) {
+            }
+
             var messages = $('#messages');
-            var canShow=canDisplayLog(lineType);
+            var canShow = canDisplayLog(lineType);
             messages.append(msg);
-            msg.data("type",lineType);
+            msg.data("type", lineType);
 
             var msgBox = messages.get(0);
-            
-            if(canShow){
+
+            if (canShow) {
                 msg.show();
-            }else{
+            } else {
                 msg.hide();
             }
-            
+
             while (msgBox.childNodes.length > 1000) {
                 msgBox.removeChild(msgBox.firstChild);
             }
-            if(canShow){
+            if (canShow) {
                 msgBox.scrollTop = msgBox.scrollHeight;
             }
-            
+
+        }
+
+        var reqFileList = function (dir) {
+            reqFileList2 = reqFileList;
+            var parent;
+            if (fileList.data("parent_path")) {
+                parent = fileList.data("parent_path") + "/";
+            }
+
+            var fileUrl = 'http://' + baseURL + '/?format=jsonp&action=list&dir=';
+            if (parent) {
+                fileUrl += parent;
+            }
+            fileUrl += dir;
+
+            $.ajax(
+                    {
+                        type: 'get',
+                        url: fileUrl,
+                        dataType: 'jsonp',
+                        jsonp: "callback",
+                        success: function (data) {
+                            console.log(data.dir);
+
+                            fileList.html('');
+                            fileList.data("parent_path", data.dir);
+                            var currPath = $('<a>').html(data.dir).attr("href", "javascript:reqFileList2('" + data.dir + "')");
+                            fileList.append(currPath);
+
+                            fileList.append($("<br/>"));
+                            fileList.append($("<pre>").text("----------"));
+                            fileList.append($("<br/>"));
+
+                            for (var i in data.dir_list) {
+                                fileList.append($('<a>').text(data.dir_list[i]).attr("href", "javascript:reqFileList2('" + data.dir_list[i] + "')"));
+                                fileList.append($("<br/>"));
+                            }
+
+                            for (var i in data.file_list) {
+                                fileList.append($('<a>').text(data.file_list[i]).attr("href", "http://" + baseURL + "/?action=download&path=" + data.dir + "/" + data.file_list[i]));
+                                fileList.append($("<br/>"));
+                            }
+                        },
+                        error: function (e) {
+                            console.log(e);
+                        }
+                    }
+            );
+
         }
 
         WebSocketClient = {
@@ -362,11 +477,13 @@ var currLevel='V';
 
                 logPrioritySelect = $("#select_log_priority");
 
-logPrioritySelect.change(function (){
-    currLevel=$(this).children('option:selected').val();
+                fileList = $("#filelist");
 
-    changeLogPriority(currLevel);
-});
+                logPrioritySelect.change(function () {
+                    currLevel = $(this).children('option:selected').val();
+
+                    changeLogPriority(currLevel);
+                });
 
                 connectButton.click(function (e) {
                     close();
@@ -387,6 +504,10 @@ logPrioritySelect.change(function (){
                     clearLog();
                 });
 
+                $("#fileRefresh").click(function (e) {
+                    reqFileList('');
+                });
+
                 var isCtrl;
                 sendMessage.keyup(function (e) {
                     if (e.which == 17) isCtrl = false;
@@ -401,55 +522,122 @@ logPrioritySelect.change(function (){
         };
 
 
-function canDisplayLog(type){
-    switch(currLevel){
-        case 'V':
-           return true;
-        case 'D':
-            return type == 'D' || type == 'I' || type == 'W' || type == 'E' || type == 'A';
-        case 'I':
-            return type == 'I' || type == 'W' || type == 'E' || type == 'A';
-        case 'W':
-            return type == 'W' || type == 'E' || type == 'A';
-        case 'E':
-            return type == 'E' || type == 'A';
-        case 'A':
-            return type == 'A';
-    }
-    return true;
-}
-
-function findType(line){
-    var inx = line.indexOf('/');
-    if(inx > 0){
-        return line.charAt(inx-1);
-    }
-}
-
-
- function changeLogPriority(priority){
-
-var currCls =logMap.get(priority);
-    if(currCls){
-        
-        $('#messages').children().each(function (){
-            var type= $(this).data("type");
-            if(type && canDisplayLog(type)){
-                $(this).show();
-                $(this).scrollTop = $(this).scrollHeight;
-                
-            }else{
-                $(this).hide();   
+        function canDisplayLog(type) {
+            switch (currLevel) {
+                case 'V':
+                    return true;
+                case 'D':
+                    return type == 'D' || type == 'I' || type == 'W' || type == 'E' || type == 'A';
+                case 'I':
+                    return type == 'I' || type == 'W' || type == 'E' || type == 'A';
+                case 'W':
+                    return type == 'W' || type == 'E' || type == 'A';
+                case 'E':
+                    return type == 'E' || type == 'A';
+                case 'A':
+                    return type == 'A';
             }
-        });
-    }
- }
+            return true;
+        }
+
+        function findType(line) {
+            var inx = line.indexOf('/');
+            if (inx > 0) {
+                return line.charAt(inx - 1);
+            }
+        }
+
+
+        function changeLogPriority(priority) {
+
+            var currCls = logMap.get(priority);
+            if (currCls) {
+
+                $('#messages').children().each(function () {
+                    var type = $(this).data("type");
+                    if (type && canDisplayLog(type)) {
+                        $(this).show();
+                        $(this).scrollTop = $(this).scrollHeight;
+
+                    } else {
+                        $(this).hide();
+                    }
+                });
+            }
+        }
 
     }
+
+
+    var tabLinks = new Array();
+    var contentDivs = new Array();
+
+    function init() {
+
+        var tabListItems = document.getElementById('tabs').childNodes;
+        for (var i = 0; i < tabListItems.length; i++) {
+            if (tabListItems[i].nodeName == "LI") {
+                var tabLink = getFirstChildWithTagName(tabListItems[i], 'A');
+                var id = getHash(tabLink.getAttribute('href'));
+                tabLinks[id] = tabLink;
+                contentDivs[id] = document.getElementById(id);
+            }
+        }
+
+        var i = 0;
+        for (var id in tabLinks) {
+            tabLinks[id].onclick = showTab;
+            tabLinks[id].onfocus = function () {
+                this.blur()
+            };
+            if (i == 0) tabLinks[id].className = 'selected';
+            i++;
+        }
+
+        var i = 0;
+        for (var id in contentDivs) {
+            if (i != 0) contentDivs[id].className = 'tabContent hide';
+            i++;
+        }
+    }
+
+    function showTab() {
+        var selectedId = getHash(this.getAttribute('href'));
+
+        for (var id in contentDivs) {
+            if (id == selectedId) {
+                tabLinks[id].className = 'selected';
+                contentDivs[id].className = 'tabContent';
+            } else {
+                tabLinks[id].className = '';
+                contentDivs[id].className = 'tabContent hide';
+            }
+        }
+        return false;
+    }
+
+    function getFirstChildWithTagName(element, tagName) {
+        for (var i = 0; i < element.childNodes.length; i++) {
+            if (element.childNodes[i].nodeName == tagName) return element.childNodes[i];
+        }
+    }
+
+    function getHash(url) {
+        var hashPos = url.lastIndexOf('#');
+        return url.substring(hashPos + 1);
+    }
+
+    var reqFileList2;
 
     $(function () {
         WebSocketClient.init();
+        init();
+
     });
+
+    var s = "ws://192.168.57.101:11229/logcat";
+    console.log();
+
 </script>
 </body>
 </html>

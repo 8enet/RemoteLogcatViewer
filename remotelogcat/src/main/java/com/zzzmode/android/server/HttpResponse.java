@@ -3,6 +3,8 @@ package com.zzzmode.android.server;
 import android.os.Environment;
 
 import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,6 +13,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,10 +93,16 @@ public class HttpResponse {
             }
             outputStream.write(sb.toString().getBytes());
         }
+
+        boolean formatJsonp(Map<String, String> query){
+            return  "jsonp".equals(query.get("format"))&&query.containsKey("callback");
+        }
     }
 
 
     private static class ListFileResponseHandle extends AbsResponseHandle {
+
+        static final File DEFAULT_DIR=Environment.getExternalStorageDirectory();
 
         @Override
         public boolean isMatchAction(String action) {
@@ -103,20 +112,44 @@ public class HttpResponse {
         @Override
         public void hanlde(Map<String, String> query, OutputStream outputStream) throws IOException {
             String dir = query.get("dir");
-            if (dir == null) {
-                dir = Environment.getExternalStorageDirectory().getAbsolutePath();
-            } else {
-                dir = dir.trim();
-            }
+            File file = (dir == null ? DEFAULT_DIR : new File(dir));
 
-            File file = new File(dir);
             if (!file.exists()) {
-                file = Environment.getExternalStorageDirectory();
+                file = DEFAULT_DIR;
             }
 
             String[] list = file.list();
-            JSONArray jsonArray = new JSONArray(Arrays.asList(list));
-            byte[] data = jsonArray.toString().getBytes();
+            String output="";
+            try {
+                if(list != null) {
+                    ArrayList<String> dirs=new ArrayList<String>();
+                    ArrayList<String> files=new ArrayList<String>();
+                    for (String path:list){
+                        File file1=new File(file.getAbsolutePath(),path);
+                        if(file1.isDirectory()){
+                            dirs.add(file1.getName());
+                        }else if(file1.isFile()){
+                            files.add(file1.getName());
+                        }
+                    }
+
+                    JSONObject jsonObject = new JSONObject();
+                    jsonObject.put("dir", file.getAbsolutePath());
+
+                    jsonObject.put("file_list", new JSONArray(files));
+                    jsonObject.put("dir_list",new JSONArray(dirs));
+
+                    if (formatJsonp(query)) {
+                        output = query.get("callback") + "(" + jsonObject.toString() + ")";
+                    } else {
+                        output = jsonObject.toString();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            byte[] data = output.getBytes();
 
             Map<String, String> headers = new HashMap<String, String>();
             headers.put("Content-Type", "application/json");
@@ -141,10 +174,7 @@ public class HttpResponse {
             String path = query.get("path");
             if (path == null) {
                 path = Environment.getExternalStorageDirectory().getAbsolutePath();
-            } else {
-                path = path.trim();
             }
-            path = path.trim();
             File file = new File(path);
             if (file.exists() && file.isFile()) {
                 respFile(file, outputStream);
@@ -152,7 +182,6 @@ public class HttpResponse {
                 responseInnerError(outputStream, 404, "Not Found", "file " + path + " not found !", null);
             }
         }
-
 
         private void respFile(File file, OutputStream outputStream) throws IOException {
             Map<String, String> headers = new HashMap<String, String>();

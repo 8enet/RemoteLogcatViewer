@@ -69,7 +69,10 @@ class EncodeUtils {
             while (p < s.length() && s.charAt(p) != '&') p++;
             String value = urlDecode(s.substring(p0, p));
             if (p < s.length() && s.charAt(p) == '&') p++;
-            map1.put(name, value);
+            if(value!=null){
+                map1.put(name, value.trim());
+            }
+
         }
         return map1;
     }

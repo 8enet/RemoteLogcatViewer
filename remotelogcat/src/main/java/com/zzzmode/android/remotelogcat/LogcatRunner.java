@@ -1,15 +1,23 @@
 
 package com.zzzmode.android.remotelogcat;
 
+import android.os.Environment;
+import android.os.SystemClock;
+import android.text.format.DateFormat;
 import android.util.Log;
 
 import com.zzzmode.android.server.WebSocket;
 import com.zzzmode.android.server.WebSocketServer;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 
 public class LogcatRunner {
@@ -27,9 +35,7 @@ public class LogcatRunner {
 
     private WebSocket mCurrWebSocket;
 
-    private int port=11229;
-
-    private static final String cmd="logcat -v time";
+    private LogConfig mLogConfig;
 
     public static volatile long byteCount=0;
 
@@ -45,12 +51,18 @@ public class LogcatRunner {
         return sLogcatRunner;
     }
 
+
     private LogcatRunner(){
 
     }
 
+
     private void init() throws IOException {
-        mWebSocketServer=new WebSocketServer(port,"/logcat");
+        if(mLogConfig == null){
+            mLogConfig=LogConfig.DEFAULT_CONFIG;
+        }
+
+        mWebSocketServer=new WebSocketServer(mLogConfig.port,mLogConfig.wsPrefix);
 
         mWebSocketServer.setWebSocketServerCallback(new WebSocketServer.WebSocketServerCallback() {
             @Override
@@ -105,8 +117,15 @@ public class LogcatRunner {
 
 
     public int getPort(){
-        return port;
+        return mLogConfig.port;
     }
+
+
+    public LogcatRunner config(LogConfig config){
+        mLogConfig=config;
+        return this;
+    }
+
 
     public void start() throws IOException {
         init();
@@ -125,7 +144,7 @@ public class LogcatRunner {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        mLogcatThread=new ShellProcessThread(cmd);
+        mLogcatThread=new ShellProcessThread(mLogConfig);
         mLogcatThread.setOutputCallback(mProcessOutputCallback);
         mLogcatThread.start();
 
@@ -151,17 +170,38 @@ public class LogcatRunner {
 
     private static class ShellProcessThread extends Thread {
 
-        private String cmd;
         private volatile boolean readerLogging =true;
         private ProcessOutputCallback mOutputCallback;
+        private LogConfig logConfig;
 
-
-        public ShellProcessThread(String cmd){
-            this.cmd=cmd;
+        public ShellProcessThread(LogConfig logConfig){
+            this.logConfig=logConfig;
         }
 
         public void setOutputCallback(ProcessOutputCallback outputCallback) {
             mOutputCallback = outputCallback;
+        }
+
+        private File getLogFile(){
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            String s = sdf.format(new Date());
+            File f= new File(logConfig.logFileDir+"/logcat-"+s+".log");
+            if(!f.exists()){
+                try {
+                    f.getParentFile().mkdir();
+                    int retry=3;
+                    while (!f.createNewFile()){
+                        if(retry <0){
+                            break;
+                        }
+                        SystemClock.sleep(50);
+                        retry--;
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            return f;
         }
 
         @Override
@@ -169,10 +209,29 @@ public class LogcatRunner {
             Process exec=null;
             InputStream inputStream=null;
             BufferedReader reader=null;
+
+            FileOutputStream fos=null;
+            BufferedOutputStream bos=null;
             try{
 
-                exec= Runtime.getRuntime().exec(cmd);
+                exec= Runtime.getRuntime().exec(logConfig.logcatCMD);
                 inputStream = exec.getInputStream();
+
+                try {
+                    if(logConfig.write2File){
+                        File f=getLogFile();
+                        Log.e(TAG, "--> write to file "+f);
+                        fos=new FileOutputStream(f,true);
+                        bos=new BufferedOutputStream(fos);
+                        StringBuilder sb=new StringBuilder("\n\n\n---------------\n");
+                        sb.append(new Date().toLocaleString());
+                        sb.append("-------------------\n\n\n\n");
+                        bos.write(sb.toString().getBytes());
+
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
 
                 reader=new BufferedReader(new InputStreamReader(inputStream));
                 while (readerLogging){
@@ -181,11 +240,45 @@ public class LogcatRunner {
                         mOutputCallback.onReaderLine(line);
                     }
 
+                    try {
+                        if(logConfig.write2File && bos != null && line != null){
+                            bos.write(line.getBytes());
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
 
+                if(bos != null){
+                    bos.flush();
+                }
             }catch (Exception e){
                 e.printStackTrace();
             }finally {
+                try {
+                    if(bos != null){
+                        bos.flush();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                try {
+                    if(bos != null){
+                        bos.close();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                try {
+                    if(fos != null){
+                        fos.close();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
                 try {
                     if(reader != null){
                         reader.close();
@@ -218,4 +311,39 @@ public class LogcatRunner {
         }
     }
 
+
+    public static class LogConfig{
+
+        private static final LogConfig DEFAULT_CONFIG=new LogConfig();
+
+        private int port=11229;
+        private boolean write2File=true;
+        private String logFileDir= Environment.getExternalStorageDirectory()+"/log";
+        private String wsPrefix="/logcat";
+        private String logcatCMD="logcat -v time";
+
+        public static LogConfig builder(){
+            return new LogConfig();
+        }
+
+        public LogConfig port(int port){
+            this.port=port;
+            return this;
+        }
+
+        public LogConfig write2File(boolean write2File){
+            this.write2File=write2File;
+            return this;
+        }
+
+        public LogConfig setLogFileDir(String logFileDir){
+            this.logFileDir=logFileDir;
+            return this;
+        }
+
+        public LogConfig setWebsocketPrefix(String prefix){
+            this.wsPrefix=prefix;
+            return this;
+        }
+    }
 }
