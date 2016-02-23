@@ -61,6 +61,7 @@ public class LogcatRunner {
         }
 
         mWebSocketServer = new WebSocketServer(mLogConfig.port, mLogConfig.wsPrefix);
+        mWebSocketServer.setWsCanRead(mLogConfig.wsCanReceiveMsg);
 
         mWebSocketServer.setWebSocketServerCallback(new WebSocketServer.WebSocketServerCallback() {
             @Override
@@ -321,10 +322,11 @@ public class LogcatRunner {
     public static class LogConfig {
 
         private int port = 11229;
-        private boolean write2File = true;
+        private boolean write2File = false;
         private String logFileDir = Environment.getExternalStorageDirectory() + "/log";
         private String wsPrefix = "/logcat";
         private String logcatCMD = "logcat -v time";
+        private boolean wsCanReceiveMsg=false;
 
         public static LogConfig builder() {
             return new LogConfig();
@@ -347,6 +349,11 @@ public class LogcatRunner {
 
         public LogConfig setWebsocketPrefix(String prefix) {
             this.wsPrefix = prefix;
+            return this;
+        }
+
+        public LogConfig setWsCanReceiveMsg(boolean b){
+            this.wsCanReceiveMsg=b;
             return this;
         }
     }
