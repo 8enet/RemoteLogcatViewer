@@ -15,7 +15,7 @@ LogcatRunner.getInstance().stop();
 ```
 
 然后在浏览器中打开<a href="http://8enet.github.io/RemoteLogcatViewer/" target="_blank">index.html</a> 输入对应局域网ip和端口`ws://ip:port/logcat` 即可(注:logcat别名可以修改)。
-<img src="images/web_ui_1.png" width="40%" height="40%" />
+<img src="images/web_ui_1.jpg" width="40%" height="40%" />
 
 如果不希望修改现有项目，可以新建一个其他的项目依赖本库，然后通过配置相同的 `android:sharedUserId=""` 和签名相同，
 可以在新app运行时中读取所有sharedUserId相同的 log。
