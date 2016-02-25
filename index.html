@@ -190,6 +190,20 @@
         color: red;
         }
 
+        #filelist {
+        height: 92%;
+        margin: 5px 0;
+        padding: 0 5px;
+        overflow: auto;
+        border: 1px dotted #777;
+        background-color: #fff;
+        line-height: 150%;
+        }
+        #filelist a{
+        font-size: large;
+        margin-top: 5px;
+        margin-bottom: 5px;
+        }
     </style>
 
 </head>
@@ -206,7 +220,7 @@
         <legend>Server Location</legend>
         <div>
             <label>URL:</label>
-            <input type="text" id="serverUrl" value="ws://192.168.57.101:11229/logcat"/>
+            <input type="text" id="serverUrl" value="ws://172.26.130.221:11229/logcat"/>
             <button id="connectButton">Open</button>
             <button id="disconnectButton">Close</button>
         </div>
@@ -307,7 +321,8 @@
         var open = function () {
             var url = serverUrl.val();
 
-            baseURL = url.substring(url.indexOf("//"), url.lastIndexOf("/")).replace("//", "");
+            var st=url.indexOf("//");
+            baseURL=url.substring(st, url.indexOf("/",st+2)).replace("//","");
 
             ws = new WebSocket(url);
             ws.onopen = onOpen;
@@ -416,18 +431,26 @@
 
         }
 
-        var reqFileList = function (dir) {
+        var reqFileList = function (absPath,dir) {
             reqFileList2 = reqFileList;
+
             var parent;
             if (fileList.data("parent_path")) {
                 parent = fileList.data("parent_path") + "/";
             }
 
             var fileUrl = 'http://' + baseURL + '/?format=jsonp&action=list&dir=';
-            if (parent) {
+            if(absPath){
+                fileUrl+=dir;
+
+            }else{
+                if (parent) {
                 fileUrl += parent;
             }
             fileUrl += dir;
+            }
+
+
 
             $.ajax(
                     {
@@ -436,25 +459,44 @@
                         dataType: 'jsonp',
                         jsonp: "callback",
                         success: function (data) {
-                            console.log(data.dir);
 
                             fileList.html('');
                             fileList.data("parent_path", data.dir);
                             var currPath = $('<a>').html(data.dir).attr("href", "javascript:reqFileList2('" + data.dir + "')");
                             fileList.append(currPath);
+                            currPath.scrollTop = currPath.scrollHeight;
+
 
                             fileList.append($("<br/>"));
-                            fileList.append($("<pre>").text("----------"));
+                            fileList.append($("<pre>").text("-----dir-----"));
                             fileList.append($("<br/>"));
+
+
+                            var c=$('<a>').text(' .. ').attr("href", "javascript:reqFileList2(true,'" + data.parent + "')");
+                                fileList.append(c);
+                                c.scrollTop = c.scrollHeight;
+                                fileList.append($("<br/>"));
 
                             for (var i in data.dir_list) {
-                                fileList.append($('<a>').text(data.dir_list[i]).attr("href", "javascript:reqFileList2('" + data.dir_list[i] + "')"));
-                                fileList.append($("<br/>"));
-                            }
+                                var c=$('<a>').text(data.dir_list[i]).attr("href", "javascript:reqFileList2(false,'" + data.dir_list[i] + "')");
+                                fileList.append(c);
+                                c.scrollTop = c.scrollHeight;
 
-                            for (var i in data.file_list) {
-                                fileList.append($('<a>').text(data.file_list[i]).attr("href", "http://" + baseURL + "/?action=download&path=" + data.dir + "/" + data.file_list[i]));
                                 fileList.append($("<br/>"));
+
+                                //cbr.scrollTop = cbr.scrollHeight;
+                            }
+                            fileList.append($("<br/>"));
+                            fileList.append($("<br/>"));
+                            fileList.append($("<pre>").text("-----file-----"));
+                            fileList.append($("<br/>"));
+                            for (var i in data.file_list) {
+                                var c=$('<a>').text(data.file_list[i]).attr("href", "http://" + baseURL + "/?action=download&path=" + data.dir + "/" + data.file_list[i]);
+                                fileList.append(c);
+                                c.scrollTop = c.scrollHeight;
+
+                                fileList.append($("<br/>"));
+                                //cbr.scrollTop = cbr.scrollHeight;
                             }
                         },
                         error: function (e) {
@@ -634,9 +676,6 @@
         init();
 
     });
-
-    var s = "ws://192.168.57.101:11229/logcat";
-    console.log();
 
 </script>
 </body>

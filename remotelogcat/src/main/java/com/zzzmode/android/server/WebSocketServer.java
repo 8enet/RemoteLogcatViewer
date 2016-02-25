@@ -1,8 +1,11 @@
 package com.zzzmode.android.server;
 
+import android.util.Log;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -20,8 +23,10 @@ public class WebSocketServer {
 
     private ServerSocket mServerSocket;
     private WebSocketServerCallback mCallback;
-    private int port=11220;
-    private boolean isActive=false;
+    private int port=0;
+    private volatile boolean isActive=false;
+
+    private boolean wsCanRead=true;
 
     private static final Executor sExecutor= Executors.newCachedThreadPool();
     private List<WeakReference<WebSocket>> mListWebSocket=new ArrayList<WeakReference<WebSocket>>();
@@ -32,6 +37,9 @@ public class WebSocketServer {
         mWebSocketPrefix=prefix;
     }
 
+    public void setWsCanRead(boolean b){
+        wsCanRead=b;
+    }
 
     public void setWebSocketServerCallback(WebSocketServerCallback mCallback) {
         this.mCallback = mCallback;
@@ -55,11 +63,19 @@ public class WebSocketServer {
     private void innerStart(){
         try {
             mServerSocket=new ServerSocket(port);
+
+            final InetAddress hostLANAddress = NetworkUtils.getLocalHostLANAddress();
+            if(hostLANAddress != null){
+                Log.e("WebSocketServer", "Server start success! Connection IP : "+hostLANAddress.getHostAddress()+":"+port);
+            }else {
+                Log.e("WebSocketServer", "Server start success! But unknow local ip address !");
+            }
+
             isActive=true;
             while (isActive){
                 handleSocket(mServerSocket.accept());
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             if(mCallback != null){
                 mCallback.onClosed();
             }
@@ -89,6 +105,7 @@ public class WebSocketServer {
             if(mServerSocket!=null){
                 mServerSocket.close();
             }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -120,7 +137,6 @@ public class WebSocketServer {
                 });
                 handled=true;
             }else if(isHttp){
-
                 sExecutor.execute(new Runnable() {
                     @Override
                     public void run() {
@@ -156,10 +172,9 @@ public class WebSocketServer {
                 mCallback.onConnected(webSocket);
             }
 
-            while (!webSocket.isClosed()) {
+            while (wsCanRead && !webSocket.isClosed()) {
                 try {
-                    byte[] read = webSocket.readFrame();
-                    System.out.println("read " + new String(read));
+                    webSocket.readFrame();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -205,8 +220,7 @@ public class WebSocketServer {
                 if (firstColonPos > 0) {
                     String key = line.substring(0, firstColonPos).trim();
                     int length = line.length();
-                    String value = line.substring(firstColonPos + 1, length);
-                    value = value.trim();
+                    String value = line.substring(firstColonPos + 1, length).trim();
                     if (!key.isEmpty() && !value.isEmpty()) {
                         headerMap.put(key, value);
                         headerMap.put(key.toLowerCase(), value);

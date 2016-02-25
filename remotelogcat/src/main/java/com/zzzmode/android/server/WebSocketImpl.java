@@ -52,7 +52,7 @@ class WebSocketImpl implements WebSocket {
 
         if (handshakeComplete) {
             byte[] nonceBytes = Base64.decode(nonce);
-            if (nonceBytes.length != 16) {
+            if (nonceBytes == null ||nonceBytes.length != 16) {
                 handshakeComplete = false;
             }
         }
@@ -92,7 +92,7 @@ class WebSocketImpl implements WebSocket {
             finshSocket();
             throw new IOException("Wrong opcode: " + opcode);
         }
-
+        //读取消息内容长度的有多种情况
         int len = inputStream.read();
         boolean encoded = (len >= 128);
 
@@ -132,20 +132,20 @@ class WebSocketImpl implements WebSocket {
     private void writeData(byte[] bytes, int opcode) throws IOException {
         try {
             int binLength = bytes.length;
-            outputStream.write(opcode); // final binary-frame
+            outputStream.write(opcode);
             if (binLength < LENGTH_16_MIN) {
-                outputStream.write(binLength); // small payload length
+                outputStream.write(binLength);
             } else if (binLength < LENGTH_64_MIN) {
-                outputStream.write(LENGTH_16); // medium payload flag
+                outputStream.write(LENGTH_16);
                 outputStream.write(
                         (binLength & MASK_LOW_WORD_HIGH_BYTE) >> OCTET_ONE);
                 outputStream.write(binLength & MASK_LOW_WORD_LOW_BYTE);
             } else {
-                outputStream.write(LENGTH_64); // large payload flag
-                outputStream.write(0x00); // upper bytes
-                outputStream.write(0x00); // upper bytes
-                outputStream.write(0x00); // upper bytes
-                outputStream.write(0x00); // upper bytes
+                outputStream.write(LENGTH_64);
+                outputStream.write(0x00);
+                outputStream.write(0x00);
+                outputStream.write(0x00);
+                outputStream.write(0x00);
                 outputStream.write(
                         (binLength & MASK_HIGH_WORD_HIGH_BYTE_NO_SIGN) >> OCTET_THREE);
                 outputStream.write(
@@ -154,7 +154,7 @@ class WebSocketImpl implements WebSocket {
                         (binLength & MASK_LOW_WORD_HIGH_BYTE) >> OCTET_ONE);
                 outputStream.write(binLength & MASK_LOW_WORD_LOW_BYTE);
             }
-            outputStream.write(bytes); // binary payload
+            outputStream.write(bytes);
         } catch (IOException e) {
             finshSocket();
             throw e;
@@ -235,7 +235,7 @@ class WebSocketImpl implements WebSocket {
 
 
 
-    public static final byte[] asUTF8(final String s) {
+    public static byte[] asUTF8(final String s) {
         try {
             return s.getBytes(DEFAULT_CHARSET);
         } catch (UnsupportedEncodingException e) {
@@ -245,17 +245,11 @@ class WebSocketImpl implements WebSocket {
     }
 
     public static boolean checkContains(final String s1, final String s2) {
-        if (s1 == null) {
-            return false;
-        }
-        return s1.contains(s2);
+        return s1 != null && s1.contains(s2);
     }
 
     public static boolean checkStartsWith(final String s1, final String s2) {
-        if (s1 == null) {
-            return false;
-        }
-        return s1.startsWith(s2);
+        return s1 != null && s1.startsWith(s2);
     }
 
 }
