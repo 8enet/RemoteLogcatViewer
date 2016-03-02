@@ -8,7 +8,7 @@ compile project(':remotelogcat')
 
 ```java
 //start
-LogcatRunner.getInstance().start();
+LogcatRunner.getInstance().config(LogcatRunner.LogConfig.builder().write2File(true)).start();
 ...
 //stop
 LogcatRunner.getInstance().stop();
