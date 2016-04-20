@@ -1,12 +1,15 @@
 
 package com.zzzmode.android.remotelogcat;
 
+import android.content.Context;
 import android.os.Environment;
 import android.os.SystemClock;
 import android.util.Log;
 
 import com.zzzmode.android.server.WebSocket;
 import com.zzzmode.android.server.WebSocketServer;
+
+import org.json.JSONObject;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -16,11 +19,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 
-public class LogcatRunner {
+public class LogcatRunner implements IMontitor.OnNotifyObserver{
     private static final String TAG = "LogcatRunner";
 
     private static final int VERSION = 1;
@@ -37,6 +45,9 @@ public class LogcatRunner {
 
     private LogConfig mLogConfig;
 
+    private Context mContext;
+    private Set<IMontitor> mMontitors=new HashSet<>();
+    private Set<Class<? extends AbsMontitor>> mMontitorCls=new HashSet<>();
 
     public static LogcatRunner getInstance() {
         if (sLogcatRunner == null) {
@@ -103,17 +114,16 @@ public class LogcatRunner {
 
             @Override
             public void onReaderLine(String line) {
-                if (mCurrWebSocket != null && line != null) {
-                    try {
-                        mCurrWebSocket.send(line);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
+                sendText(line);
             }
         };
     }
-
+    @Override
+    public void onChange(JSONObject jsonObject) {
+        if(jsonObject != null){
+            sendText(jsonObject.toString());
+        }
+    }
 
     public int getPort() {
         return mLogConfig.port;
@@ -125,13 +135,62 @@ public class LogcatRunner {
         return this;
     }
 
+    public LogcatRunner with(Context context){
+        if(context != null){
+            mContext=context.getApplicationContext();
+            //inner montitor
+            mMontitorCls.add(MemoryMontitor.class);
+        }
+        return this;
+    }
+
+
+    public LogcatRunner addMotitor(Class<? extends AbsMontitor>... cls){
+        mMontitorCls.addAll(Arrays.asList(cls));
+        return this;
+    }
+
+    private void startMontitor(){
+        if(!mMontitorCls.isEmpty()){
+            for (Class<? extends AbsMontitor> cls:mMontitorCls){
+                try {
+                    AbsMontitor montitor= cls.newInstance();
+                    montitor.attachServer(mContext,this);
+                    montitor.start();
+                    mMontitors.add(montitor);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private void stopMontitor(){
+        if(!mMontitors.isEmpty()){
+            for (IMontitor montitor:mMontitors){
+                montitor.stop();
+            }
+            mMontitors.clear();
+        }
+    }
 
     public void start() throws IOException {
         init();
         mWebSocketServer.start();
         startLogThread();
+
+        startMontitor();
     }
 
+    private void sendText(String string){
+        if (mCurrWebSocket != null && string != null) {
+            try {
+                mCurrWebSocket.send(string);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
     private void startLogThread() {
         try {
@@ -151,6 +210,7 @@ public class LogcatRunner {
 
     public void stop() {
         try {
+            stopMontitor();
 
             if (mWebSocketServer != null) {
                 mWebSocketServer.stop();
@@ -165,6 +225,8 @@ public class LogcatRunner {
             e.printStackTrace();
         }
     }
+
+
 
 
     private static class ShellProcessThread extends Thread {
