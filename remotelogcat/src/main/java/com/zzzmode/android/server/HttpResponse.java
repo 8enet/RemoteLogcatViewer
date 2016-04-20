@@ -198,6 +198,7 @@ public class HttpResponse {
                 while ((len = fis.read(buff)) != -1) {
                     outputStream.write(buff, 0, len);
                 }
+                outputStream.flush();
             }  catch (IOException e) {
                 e.printStackTrace();
             } finally {

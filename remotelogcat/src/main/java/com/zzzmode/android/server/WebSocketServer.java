@@ -2,6 +2,8 @@ package com.zzzmode.android.server;
 
 import android.util.Log;
 
+import com.zzzmode.android.internel.ThreadUtil;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
@@ -13,8 +15,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 /**
  * Created by zl on 16/1/31.
@@ -28,7 +28,6 @@ public class WebSocketServer {
 
     private boolean wsCanRead=true;
 
-    private static final Executor sExecutor= Executors.newCachedThreadPool();
     private List<WeakReference<WebSocket>> mListWebSocket=new ArrayList<WeakReference<WebSocket>>();
     private String mWebSocketPrefix;
 
@@ -51,7 +50,7 @@ public class WebSocketServer {
             return;
         }
 
-        sExecutor.execute(new Runnable() {
+        ThreadUtil.getExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 innerStart();
@@ -129,7 +128,7 @@ public class WebSocketServer {
 
             if(isWebsocket){
 
-                sExecutor.execute(new Runnable() {
+                ThreadUtil.getExecutor().execute(new Runnable() {
                     @Override
                     public void run() {
                         handleAsWebsocket(socket,headers);
@@ -137,7 +136,7 @@ public class WebSocketServer {
                 });
                 handled=true;
             }else if(isHttp){
-                sExecutor.execute(new Runnable() {
+                ThreadUtil.getExecutor().execute(new Runnable() {
                     @Override
                     public void run() {
                         handleAsHttp(socket,headers);
