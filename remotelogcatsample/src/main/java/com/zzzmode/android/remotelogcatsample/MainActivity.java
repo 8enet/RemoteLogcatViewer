@@ -22,7 +22,12 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         try {
-            LogcatRunner.getInstance().config(LogcatRunner.LogConfig.builder().setWsCanReceiveMsg(false).write2File(true)).start();
+            LogcatRunner.getInstance()
+                    .config(LogcatRunner.LogConfig.builder()
+                            .setWsCanReceiveMsg(false)
+                            .write2File(true))
+                    .with(getApplicationContext())
+                    .start();
         } catch (IOException e) {
             e.printStackTrace();
         }
