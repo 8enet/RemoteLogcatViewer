@@ -15,6 +15,7 @@ LogcatRunner.getInstance().stop();
 ```
 
 然后在浏览器中打开<a href="http://8enet.github.io/RemoteLogcatViewer/" target="_blank">index.html</a> 输入对应局域网ip和端口`ws://ip:port/logcat` 即可(注:logcat别名可以修改)。
+> 因为一些安全原因,chrome禁止了部分不安全的请求地址`ws`,可以`允许加载不安全脚本`继续使用或者下载`index.html` 文件本地打开也可以。
 <img src="images/web_ui_1.jpg" width="40%" height="40%" />
 
 如果不希望修改现有项目，可以新建一个其他的项目依赖本库，然后通过配置相同的 `android:sharedUserId=""` 和签名相同，
