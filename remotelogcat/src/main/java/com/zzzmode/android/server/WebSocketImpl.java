@@ -41,11 +41,11 @@ class WebSocketImpl implements WebSocket {
         handshakeComplete = checkStartsWith(requestLine, "GET /")
                 && checkContains(requestLine, "HTTP/")
                 && headers.get("Host") != null
-                && checkContains(headers.get("Upgrade"), "websocket")
-                && checkContains(headers.get("Connection"), "Upgrade")
-                && "13".equals(headers.get("Sec-WebSocket-Version"))
-                && headers.get("Sec-WebSocket-Key") != null;
-        String nonce = headers.get("Sec-WebSocket-Key");
+                && checkContains(headers.get("upgrade"), "websocket")
+                && checkContains(headers.get("connection"), "Upgrade")
+                && "13".equals(headers.get("sec-websocket-version"))
+                && headers.get("sec-websocket-key") != null;
+        String nonce = headers.get("sec-websocket-key");
         //根据客户端请求的seckey生成一个acceptkey,
         // 具体做法是先提取seckey+[websocket公开的一个uuid,这个uuid是固定的]
         // 拼接成一个字符串计算sha1值
