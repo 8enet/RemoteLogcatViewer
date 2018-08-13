@@ -130,6 +130,11 @@ public class LogcatRunner implements IMontitor.OnNotifyObserver{
     }
 
 
+    public String getWsPrefix() {
+        return mLogConfig.wsPrefix;
+    }
+
+
     public LogcatRunner config(LogConfig config) {
         mLogConfig = config;
         return this;
