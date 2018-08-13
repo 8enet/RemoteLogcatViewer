@@ -130,16 +130,27 @@ public class LogcatRunner implements IMontitor.OnNotifyObserver{
     }
 
 
+    public String getWsPrefix() {
+        return mLogConfig.wsPrefix;
+    }
+
+
     public LogcatRunner config(LogConfig config) {
         mLogConfig = config;
         return this;
     }
 
     public LogcatRunner with(Context context){
+        return with(context, true);
+    }
+
+    public LogcatRunner with(Context context, boolean isAddMemoryMonitor){
         if(context != null){
             mContext=context.getApplicationContext();
-            //inner montitor
-            mMontitorCls.add(MemoryMontitor.class);
+            if (isAddMemoryMonitor) {
+                //inner montitor
+                mMontitorCls.add(MemoryMontitor.class);
+            }
         }
         return this;
     }
