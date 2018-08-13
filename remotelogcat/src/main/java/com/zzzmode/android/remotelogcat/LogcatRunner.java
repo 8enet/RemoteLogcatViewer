@@ -136,10 +136,16 @@ public class LogcatRunner implements IMontitor.OnNotifyObserver{
     }
 
     public LogcatRunner with(Context context){
+        return with(context, true);
+    }
+
+    public LogcatRunner with(Context context, boolean isAddMemoryMonitor){
         if(context != null){
             mContext=context.getApplicationContext();
-            //inner montitor
-            mMontitorCls.add(MemoryMontitor.class);
+            if (isAddMemoryMonitor) {
+                //inner montitor
+                mMontitorCls.add(MemoryMontitor.class);
+            }
         }
         return this;
     }

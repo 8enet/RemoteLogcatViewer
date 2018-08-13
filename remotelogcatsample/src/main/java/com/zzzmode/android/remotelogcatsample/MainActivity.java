@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
                     .config(LogcatRunner.LogConfig.builder()
                             .setWsCanReceiveMsg(false)
                             .write2File(true))
-                    .with(getApplicationContext())
+                    .with(getApplicationContext(), false)
                     .start();
         } catch (IOException e) {
             e.printStackTrace();
